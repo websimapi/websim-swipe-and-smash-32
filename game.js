@@ -67,25 +67,28 @@ class Game {
         this.scoreElement = document.getElementById('score');
         this.isProcessing = false;
         this.isGameStarted = false;
-        this.isRecordingStarted = false;
 
         this.comboCount = 0;
         this.smashValue = config.initialSmashValue;
-        this.smashProgress = 0;
-        
-        this.currentOrientation = null;
-        this.requiredOrientation = 'portrait-primary';
-        this.orientationRuleInterval = null;
-
-        this.inputHandler = new InputHandler(this.board.boardElement, this.onSwap.bind(this), this.onSmash.bind(this));
+        this.smashProgress = 0; // 0, 0.5
         this.orientationIndicator = document.getElementById('orientation-indicator');
-        this.requiredOrientationIndicator = document.getElementById('required-orientation-indicator');
+        
+        // Initialize InputHandler before OrientationHandler
+        this.inputHandler = new InputHandler(this.board.boardElement, this.onSwap.bind(this), this.onSmash.bind(this));
+        
         this.orientationHandler = new OrientationHandler(this.orientationIndicator, this.onOrientationChange.bind(this));
-
         this.timer = new GameTimer(config.timerDuration, document.getElementById('timer'), this.onTimerEnd.bind(this));
         this.ui = new UI({ onStartGame: this.onStartGame.bind(this) });
-        this.replay = new Replay(this, config);
         
+        // Replay logic is now in its own class
+        this.replay = new Replay(this, config);
+        this.isRecordingStarted = false;
+        
+        this.requiredOrientation = 'portrait-primary';
+        this.currentOrientation = null;
+        this.requiredOrientationIndicator = document.getElementById('required-orientation-indicator');
+        this.orientationRuleInterval = null;
+
         this.ui.updateScore(0);
         this.ui.updateSmash(this.smashValue, this.smashProgress);
         this.initializeBoard();
@@ -152,20 +155,14 @@ class Game {
         this.currentOrientation = newOrientation;
         
         const color = getOrientationColor(newOrientation);
-        if (this.board && this.board.boardElement) {
-            this.board.boardElement.style.borderColor = color;
-        }
+        this.board.boardElement.style.borderColor = color;
         
         const pos = getIndicatorPosition(newOrientation);
-        if (this.orientationIndicator) {
-            Object.assign(this.orientationIndicator.style, pos);
-        }
+        Object.assign(this.orientationIndicator.style, pos);
 
         // Update input handler rotation based on the current orientation
         const rotation = getOrientationRotation(newOrientation);
-        if (this.inputHandler) {
-            this.inputHandler.setRotation(rotation);
-        }
+        this.inputHandler.setRotation(rotation);
 
         if (this.isRecordingStarted) {
             recorder.recordAction({ type: 'currentOrientationChange', orientation: newOrientation });
